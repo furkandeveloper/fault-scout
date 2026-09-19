@@ -4,10 +4,11 @@
   "description": "Discover how your software system can fail. Read-only chaos/reliability analysis of a repository with evidence-backed failure scenarios and Mermaid diagrams.",
   "version": "0.1.2",
   "author": {
-    "name": "FaultScout"
+    "name": "furkandeveloper",
+    "url": "https://github.com/furkandeveloper"
   },
-  "homepage": "https://github.com/OWNER/fault-scout#readme",
-  "repository": "https://github.com/OWNER/fault-scout",
+  "homepage": "https://github.com/furkandeveloper/fault-scout#readme",
+  "repository": "https://github.com/furkandeveloper/fault-scout",
   "license": "MIT",
   "keywords": [
     "chaos-engineering",

@@ -31,14 +31,14 @@ repository is its own plugin marketplace, so it installs straight from GitHub.
 Inside Claude Code:
 
 ```text
-/plugin marketplace add OWNER/fault-scout
+/plugin marketplace add furkandeveloper/fault-scout
 /plugin install faultscout@faultscout
 ```
 
 Or from your shell:
 
 ```bash
-claude plugin marketplace add OWNER/fault-scout
+claude plugin marketplace add furkandeveloper/fault-scout
 claude plugin install faultscout@faultscout
 ```
 
@@ -190,7 +190,7 @@ knowledge about "systems like this".
 Clone the repository and validate the plugin:
 
 ```bash
-git clone https://github.com/OWNER/fault-scout.git
+git clone https://github.com/furkandeveloper/fault-scout.git
 cd fault-scout
 claude plugin validate .
 ```
@@ -232,6 +232,12 @@ comes from `commands/` and `skills/`.
 - **0.4** — Controlled local Docker failure injection
 - **0.5** — Execute chaos experiments and observe results
 - **1.0** — CI integration: scenarios and regressions reported on pull requests
+
+## Author
+
+[furkandeveloper](https://github.com/furkandeveloper)
+
+Issues and pull requests: <https://github.com/furkandeveloper/fault-scout>
 
 ## License
 
