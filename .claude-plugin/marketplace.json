@@ -1,0 +1,23 @@
+{
+  "name": "faultscout",
+  "owner": {
+    "name": "FaultScout"
+  },
+  "description": "FaultScout plugin marketplace. Discover how your software system can fail.",
+  "plugins": [
+    {
+      "name": "faultscout",
+      "source": "./",
+      "description": "Discover how your software system can fail. Read-only chaos/reliability analysis with evidence-backed failure scenarios and Mermaid diagrams.",
+      "version": "0.1.2",
+      "license": "MIT",
+      "repository": "https://github.com/OWNER/fault-scout",
+      "keywords": [
+        "chaos-engineering",
+        "reliability",
+        "claude-code"
+      ],
+      "category": "development"
+    }
+  ]
+}

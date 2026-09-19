@@ -1,0 +1,21 @@
+{
+  "name": "faultscout",
+  "displayName": "FaultScout",
+  "description": "Discover how your software system can fail. Read-only chaos/reliability analysis of a repository with evidence-backed failure scenarios and Mermaid diagrams.",
+  "version": "0.1.2",
+  "author": {
+    "name": "FaultScout"
+  },
+  "homepage": "https://github.com/OWNER/fault-scout#readme",
+  "repository": "https://github.com/OWNER/fault-scout",
+  "license": "MIT",
+  "keywords": [
+    "chaos-engineering",
+    "reliability",
+    "claude-code",
+    "agent",
+    "software-engineering"
+  ],
+  "commands": "./commands/",
+  "skills": "./skills/"
+}
