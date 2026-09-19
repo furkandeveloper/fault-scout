@@ -3,7 +3,7 @@
 > Discover how your software system can fail.
 
 [![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-blue)](#installation)
-[![Version](https://img.shields.io/badge/version-0.1.2-informational)](#limitations)
+[![Version](https://img.shields.io/badge/version-0.2.0-informational)](#limitations)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 ## What is FaultScout?
@@ -70,6 +70,13 @@ Open Claude Code in the repository you want to analyze and run:
 /faultscout:chaos
 ```
 
+The report is written in English by default. To get it in another supported
+language, pass `language=`:
+
+```text
+/faultscout:chaos language=turkish
+```
+
 Claude then:
 
 1. Inspects the repository: languages, entry points, dependencies, config,
@@ -85,6 +92,41 @@ Claude then:
 
 The analysis is **read-only**. FaultScout does not modify your repository,
 change configuration, or start, stop, or disrupt any process or service.
+
+### Report language
+
+```text
+/faultscout:chaos                     English (default)
+/faultscout:chaos language=english    English
+/faultscout:chaos language=turkish    Turkish
+```
+
+| | |
+|---|---|
+| Default language | English |
+| Supported | English, Turkish |
+
+The language changes only the human-readable part of the report: title,
+headings, scenario descriptions, evidence explanations, propagation chains,
+consequences, suggested experiments, the summary, and Mermaid node labels.
+For example, in Turkish `## Failure Scenarios` becomes `## Hata Senaryoları`
+and `**Failure Propagation:**` becomes `**Hata Yayılımı:**`.
+
+Anything taken from your repository is never translated: file paths,
+function/type/variable names, config keys, queue/topic/table/cache key names,
+log messages, and code snippets stay exactly as they appear in the code.
+Translation does not change the technical meaning of the evidence, the
+fact/hypothesis distinction ("may grow" stays "büyüyebilir", not "büyür"),
+the confidence levels, or the Mermaid structure.
+
+An unsupported value stops before any analysis:
+
+```text
+/faultscout:chaos language=spanish
+
+Unsupported language: spanish.
+Supported languages: english, turkish.
+```
 
 ## What it analyzes
 
@@ -172,18 +214,79 @@ evidence in your repository: the components, connections, and propagation
 steps come from files Claude actually read, and nothing is added from general
 knowledge about "systems like this".
 
+## Experiment execution (v0.2)
+
+v0.2 turns a failure scenario into a real, but tightly scoped, runtime
+experiment against your **local Docker Compose environment** — no MCP
+server, no backend, no daemon. Claude Code's own terminal access is the
+entire runtime interface.
+
+The flow:
+
+```text
+Analyze (/faultscout:chaos)
+        ↓
+Choose a scenario
+        ↓
+Plan the experiment (target, failure mode, expected signal, restore steps)
+        ↓
+You explicitly approve execution
+        ↓
+Docker Compose experiment (snapshot → inject → observe → restore → verify)
+        ↓
+Experiment Report
+```
+
+Run `/faultscout:experiment` (optionally `/faultscout:experiment 3` to pick
+scenario 3 directly) — see the `chaos-experiment` skill and
+`commands/experiment.md`. Supported failure modes are exactly:
+
+- **`container.pause`** — pause and later unpause a Compose service's
+  container.
+- **`container.network_disconnect`** — disconnect and later reconnect a
+  container from a specific Compose-managed network.
+- **`redis.poison_key`** — overwrite a specific Redis key and later restore
+  its exact original value (or delete it, if it did not previously exist).
+
+Guarantees:
+
+- **FaultScout never modifies your codebase.** No source file, Dockerfile,
+  Compose file, or configuration file is ever edited to run an experiment.
+  If a scenario would require a code change to test, FaultScout says so and
+  stops instead.
+- **Nothing is mutated without your explicit approval of the printed plan.**
+  Selecting a scenario is not approval to execute it.
+- **Local Docker Compose only.** Experiments never target Kubernetes,
+  staging, production, cloud infrastructure, or a remote Docker daemon.
+- **Every experiment that injects a failure restores it**, and verifies the
+  restoration instead of assuming the restore command succeeded. If restore
+  fails, FaultScout says so plainly and gives the exact manual fix.
+- **No generic command execution.** Only the commands each supported failure
+  mode actually needs (`docker compose pause/unpause`, `docker network
+  disconnect/connect`, a single planned `redis-cli` operation, plus
+  read-only inspection and observation commands) — never `docker compose
+  down`, `docker system prune`, `docker rm`, `docker kill`, `docker stop`,
+  `docker volume rm`, or `docker network rm`.
+
 ## Limitations
 
-- **v0.1.2 is read-only.** It reads and reasons; it changes nothing.
-- It does **not** inject failures into a running system.
-- It does **not** touch production systems or infrastructure.
+- **Chaos analysis (`/faultscout:chaos`) is read-only.** It reads and
+  reasons; it changes nothing in your repository or your running system.
+- **Experiment execution (`/faultscout:experiment`) can mutate your local
+  Docker Compose environment**, but only after you explicitly approve a
+  printed plan, only using one of the three supported failure modes, and
+  always followed by a verified restore. It never modifies your repository.
+- Neither command touches production systems or infrastructure.
 - The analysis is only as good as the repository evidence. Behavior that lives
   outside the repository (infrastructure config, managed services, runtime
   settings) is not visible to it.
-- Every failure scenario is a **hypothesis**, not a confirmed failure. Treat
-  the report as a prioritized list of things to verify.
-- Suggested experiments are descriptions for a future chaos test. They are
-  not executed automatically.
+- Every failure scenario is a **hypothesis**, not a confirmed failure, until
+  an experiment result says `CONFIRMED` or `PARTIALLY_CONFIRMED` with
+  concrete evidence.
+- Restoring the injected infrastructure state does not necessarily undo
+  application-level business side effects that occurred while the failure
+  was active; the experiment report calls this out explicitly when it
+  applies.
 
 ## Development
 
@@ -203,16 +306,21 @@ cd /path/to/some/project
 claude --plugin-dir /path/to/fault-scout
 ```
 
-Then run `/faultscout:chaos` as usual. Changes to the command or skill files
-take effect on the next session.
+Then run `/faultscout:chaos` or `/faultscout:experiment` as usual. Changes to
+command or skill files take effect on the next session.
 
-The plugin has no build step and no dependencies. It consists of:
+The commands and skills have no build step and no dependencies. There is no
+server, backend, or daemon of any kind — the experiment engine is the
+`chaos-experiment` skill itself, driving Claude Code's terminal directly.
+The plugin consists of:
 
 ```text
 .claude-plugin/plugin.json        plugin manifest
 .claude-plugin/marketplace.json   marketplace manifest (lets the repo install from GitHub)
-commands/chaos.md                 the /faultscout:chaos command
-skills/chaos-analysis/SKILL.md    how Claude reasons about failures
+commands/chaos.md                 the /faultscout:chaos command (parses language=)
+commands/experiment.md            the /faultscout:experiment command (approval-gated execution)
+skills/chaos-analysis/SKILL.md    how Claude reasons about failures and writes the report
+skills/chaos-experiment/SKILL.md  how Claude plans and safely executes a chosen experiment
 CLAUDE.md                         development specification (not loaded by the plugin)
 ```
 
@@ -225,12 +333,13 @@ comes from `commands/` and `skills/`.
 - **0.1** — Repository analysis and report
 - **0.1.1** — Deterministic report structure, failure propagation chains,
   root-cause deduplication, output self-check
-- **0.1.2** — Mermaid architecture and failure propagation diagrams (this
-  release)
-- **0.2** — Generate executable test scenarios
-- **0.3** — FaultScout MCP server
-- **0.4** — Controlled local Docker failure injection
-- **0.5** — Execute chaos experiments and observe results
+- **0.1.2** — Mermaid architecture and failure propagation diagrams
+- **0.1.3** — Report language selection (`language=english|turkish`)
+- **0.2** — `/faultscout:experiment`: turn a scenario into an approved,
+  evidence-backed experiment plan and execute it directly through Claude
+  Code's terminal against local Docker Compose (`container.pause`,
+  `container.network_disconnect`, `redis.poison_key`), with mandatory
+  snapshot/restore/verify and an evidence-backed result (this release)
 - **1.0** — CI integration: scenarios and regressions reported on pull requests
 
 ## Author

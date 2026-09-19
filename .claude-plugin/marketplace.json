@@ -9,8 +9,8 @@
     {
       "name": "faultscout",
       "source": "./",
-      "description": "Discover how your software system can fail. Read-only chaos/reliability analysis with evidence-backed failure scenarios and Mermaid diagrams.",
-      "version": "0.1.2",
+      "description": "Discover how your software system can fail. Evidence-backed chaos/reliability analysis with Mermaid diagrams, plus approval-gated local Docker Compose failure experiments run through the terminal.",
+      "version": "0.2.0",
       "license": "MIT",
       "repository": "https://github.com/furkandeveloper/fault-scout",
       "keywords": [

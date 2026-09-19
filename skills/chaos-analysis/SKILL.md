@@ -1,6 +1,6 @@
 ---
 name: chaos-analysis
-description: Evidence-based chaos/reliability analysis of a repository. Use when asked how a system could fail, for a chaos analysis, failure scenarios, failure hypotheses, a reliability review, or when the /faultscout:chaos command is run.
+description: Evidence-based chaos/reliability analysis of a repository. Use when asked how a system could fail, for a chaos analysis, failure scenarios, failure hypotheses, a reliability review, or when the /faultscout:chaos command is run. The report can be produced in English (default) or Turkish.
 ---
 
 # Chaos Analysis
@@ -392,6 +392,173 @@ the **analysis**, not severity or impact.
   unclear.
 - **Low** — the scenario is plausible but repository evidence is incomplete.
 
+## Report language
+
+The report can be produced in a small set of languages. Nothing else about
+the analysis changes.
+
+> Analyze the repository in whatever language provides the strongest
+> technical precision, but produce the final human-readable report in the
+> requested language.
+
+Supported languages:
+
+- `english` — the default when no language is requested
+- `turkish`
+
+The `/faultscout:chaos` command resolves the language from its
+`language=<value>` argument and passes it on. When you are invoked another
+way and no language was requested, use English. If a language other than the
+supported ones is requested, print exactly the following and stop, without
+inspecting the repository or producing a report:
+
+```text
+Unsupported language: <value>.
+Supported languages: english, turkish.
+```
+
+### What the language applies to
+
+Everything a human reads in the report is written in the requested language:
+
+- the report title and all section headings and bold labels
+- scenario titles
+- Evidence explanations (the prose around the quoted identifiers)
+- Failure Condition, Failure Propagation chain steps, Potential Consequence,
+  How It Could Be Tested Later, Summary
+- the Architecture summary
+- Mermaid node labels in the architecture and propagation diagrams, and the
+  caption above a propagation diagram
+- the Confidence value
+
+### What is never translated
+
+Anything that comes from the repository is quoted exactly as it appears
+there, in every language:
+
+- file paths (`service/budget/service.go`)
+- function, method, type, class, variable, and handler names (`Increase`,
+  `increaseCurrentBudgetFromRedis`, `PromotionPassiveRequest`)
+- configuration keys and values, environment variable names
+- queue, exchange, topic, routing key, table, index, collection, and cache key
+  names (`promo-after-order-process_error`, `Budget_<parentId>`)
+- log messages, error strings, and code snippets
+- product and technology names (Redis, PostgreSQL, Kafka, RabbitMQ)
+- Mermaid syntax: keywords, arrows, node IDs, class names (`failure`,
+  `consequence`), and fence markers
+
+An identifier stays in backticks and the sentence around it is in the report
+language: "`service/budget/service.go` içindeki `Increase` fonksiyonu ...".
+Well-known engineering terms that Turkish-speaking developers normally use in
+English (idempotency, retry, consumer, timeout, cache, commit, rollback, ack)
+may stay in English inside Turkish prose when a translation would be less
+precise. Precision wins over purity.
+
+### Evidence and hedging integrity
+
+Translation changes the words, never the meaning:
+
+- Evidence states the same facts; do not add, drop, or strengthen a technical
+  claim while translating.
+- The fact / hypothesis distinction is preserved. `may` / `could` become
+  `-ebilir` / `-abilir` ("büyüyebilir", "iki kez işlenebilir"); `potential`
+  becomes "olası"; `likely` becomes "muhtemelen"; `plausible` becomes
+  "makul". Never turn a hedged sentence into a statement of fact
+  ("büyüyebilir", not "büyür"; "pasif hale gelebilir", not "pasif hale
+  gelir").
+- Confidence levels map one-to-one and never change while translating.
+- Propagation chains and diagrams keep the same steps in the same order; only
+  the wording of each step changes.
+- Mermaid diagrams keep their exact structure. Only the text inside node
+  brackets changes. Node IDs, edges, `classDef` and `class` lines are
+  identical to the English version. Quote a label if it contains
+  parentheses, brackets, quotes, or a colon, in any language.
+
+### Turkish
+
+Fixed headings, labels, and values for `language=turkish`. Use these exactly
+so every Turkish report has the same structure:
+
+| English | Turkish |
+|---|---|
+| `# FaultScout Report` | `# FaultScout Raporu` |
+| `## Repository` | `## Depo` |
+| `## Architecture` | `## Mimari` |
+| `## Failure Scenarios` | `## Hata Senaryoları` |
+| `**Failure Type:**` | `**Hata Tipi:**` |
+| `**Evidence:**` | `**Kanıt:**` |
+| `**Failure Condition:**` | `**Hata Koşulu:**` |
+| `**Failure Propagation:**` | `**Hata Yayılımı:**` |
+| `**Potential Consequence:**` | `**Olası Sonuç:**` |
+| `**How It Could Be Tested Later:**` | `**İleride Nasıl Test Edilebilir:**` |
+| `**Confidence:**` | `**Güven:**` |
+| `High` / `Medium` / `Low` | `Yüksek` / `Orta` / `Düşük` |
+| `## Summary` | `## Özet` |
+| `Potential failure propagation:` | `Olası hata yayılımı:` |
+| `Evidence insufficient.` | `Kanıt yetersiz.` |
+
+Failure Type labels may stay in English (`Messaging / Idempotency`) or be
+translated (`Mesajlaşma / Idempotency`); pick one style and use it for all
+five scenarios.
+
+Example of the same propagation diagram in both languages. The structure is
+identical; only the labels differ:
+
+```mermaid
+flowchart TD
+    A[Parent INCRBY fails]
+    B[Idempotency key is deleted]
+    C[Consumer retries]
+    D[Child counter increments again]
+    E[Promotion may become passive early]
+
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+
+    classDef failure stroke-width:2px
+    classDef consequence stroke-width:2px,stroke-dasharray: 4 2
+    class A failure
+    class E consequence
+```
+
+```mermaid
+flowchart TD
+    A[Parent INCRBY başarısız olur]
+    B[Idempotency key silinir]
+    C[Consumer yeniden dener]
+    D[Child counter tekrar artırılır]
+    E[Promotion erken pasif hale gelebilir]
+
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+
+    classDef failure stroke-width:2px
+    classDef consequence stroke-width:2px,stroke-dasharray: 4 2
+    class A failure
+    class E consequence
+```
+
+Example of an Evidence paragraph in Turkish. Identifiers are unchanged and
+the claim is the same as it would be in English:
+
+```text
+`service/budget/service.go` — `Increase`
+
+Idempotency wrapper, sarılan fonksiyon hata döndürdüğünde Redis anahtarını
+siliyor. Child sayaç, parent sayaçtan önce artırılıyor ve parent işlemi
+başarısız olduğunda child artışını geri alan bir telafi adımı bulunamadı.
+```
+
+### Adding a language later
+
+A new language needs only a new heading table and hedging notes in this
+section, plus the value added to the supported list in this file and in
+`commands/chaos.md`. No other part of the skill changes.
+
 ## Report format
 
 The report is printed **once**, as the final message, exactly in this
@@ -568,6 +735,19 @@ Content:
 - [ ] Every propagation step maps to something real in the code.
 - [ ] Hypotheses use hedged language; no sentence claims a confirmed failure.
 - [ ] Confidence reflects evidence strength, not severity.
+
+Language (when the report is not in English):
+
+- [ ] Every heading, label, confidence value, caption, and the
+      `Evidence insufficient.` phrase come from the table for that language.
+- [ ] No file path, symbol, config key, queue/table/key name, log message, or
+      code snippet was translated or respelled.
+- [ ] Every hedged English statement is still hedged; no "-ebilir" became a
+      plain present tense.
+- [ ] Confidence levels are the same as they would be in English.
+- [ ] Mermaid fences: same node IDs, edges, `classDef` and `class` lines as
+      the English version; only labels differ, and labels with special
+      characters are quoted.
 
 If a scenario cannot pass this check, drop it or mark its evidence
 insufficient rather than printing a broken scenario.

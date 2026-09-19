@@ -1,5 +1,6 @@
 ---
 description: Discover how this repository's system could fail (FaultScout chaos analysis)
+argument-hint: "[language=english|turkish]"
 ---
 
 Run a FaultScout chaos analysis on the current repository.
@@ -9,6 +10,42 @@ Load and follow the `chaos-analysis` skill for the full rules. This command is
 Do not create or modify any file in the repository, do not change
 configuration, and do not start, stop, or disrupt any process, container,
 network, or service.
+
+## Usage
+
+```text
+/faultscout:chaos                     report in English (default)
+/faultscout:chaos language=english    report in English
+/faultscout:chaos language=turkish    report in Turkish
+```
+
+## Report language
+
+Arguments passed to this command: `$ARGUMENTS`
+
+Resolve the report language **before** starting the analysis:
+
+- No arguments, or no `language=` option → `english`.
+- `language=<value>` → use `<value>`, compared case-insensitively.
+- Supported values are exactly `english` and `turkish`.
+- Anything in the arguments that is not a `language=` option is ignored.
+
+If the value is not supported, print exactly this (with the value the user
+gave) and **stop**. Do not inspect the repository and do not produce a report:
+
+```text
+Unsupported language: <value>.
+Supported languages: english, turkish.
+```
+
+The language applies only to the human-readable report in step 10. The
+analysis itself (steps 1–9) is unaffected. The "Report language" section of
+the skill defines what is translated and what must never be translated: file
+paths, function/type/variable names, config keys, queue/exchange/topic names,
+database and Redis key names, log messages, and code snippets are always
+quoted exactly as they appear in the repository, in every language.
+
+## Steps
 
 Work through these steps in order. Steps 1–8 are silent analysis: use tools,
 take normalized notes, and at most print one-line progress remarks. Do not
@@ -48,28 +85,32 @@ once, in step 10, as the final message.
    fixed structure, every section exactly once per scenario, no duplicated
    evidence or paragraphs, no near-duplicate titles, no merged or truncated
    words, no raw tool output, every path and symbol actually seen, hedged
-   language only, and every diagram consistent with its text (no invented
-   nodes or edges). Fix problems before printing.
-10. **Print the FaultScout Report** once, in the chat, using the exact report
-    and scenario format defined in the skill: a Mermaid architecture diagram
-    of the normal flow under Architecture, the Failure Propagation text chain
-    for every scenario, and a Mermaid propagation diagram only for scenarios
-    where it adds value (a branch, a join, a retry loop, or a long chain).
-    Keep it concise.
+   language only, every diagram consistent with its text (no invented nodes
+   or edges), and — when the report is not in English — the language checks
+   (headings from the skill's table, identifiers untranslated, hedging
+   preserved, Mermaid syntax intact). Fix problems before printing.
+10. **Print the FaultScout Report** once, in the chat, in the resolved report
+    language, using the exact report and scenario format defined in the
+    skill: a Mermaid architecture diagram of the normal flow under
+    Architecture, the Failure Propagation text chain for every scenario, and
+    a Mermaid propagation diagram only for scenarios where it adds value (a
+    branch, a join, a retry loop, or a long chain). Keep it concise.
 
-Rules that always apply:
+## Rules that always apply
 
 - Evidence before hypothesis. Never invent files, functions, services,
   dependencies, configuration, behavior, or line numbers. Cite line numbers
   only for lines you actually read.
 - If evidence for a scenario cannot be found, write `Evidence insufficient.`
+  (or its translation from the skill's heading table).
 - Never claim the system definitely fails. Use "may", "could", "potential",
-  "plausible", or "likely" (only when evidence supports it). No result in
-  this report is confirmed.
+  "plausible", or "likely" (only when evidence supports it), or their
+  equivalents in the report language. No result in this report is confirmed.
 - Confidence is High, Medium, or Low and measures confidence in the analysis,
-  not severity.
+  not severity. Translating the report never changes a confidence level.
 - The report is written in clean prose from your own notes, never by pasting
   tool output. Each scenario heading and section appears exactly once.
 - Diagrams are plain `mermaid` fences and follow the same evidence rule as
   text: no component, connection, or propagation step without repository
   evidence, and no wording that claims a confirmed failure.
+- Code identifiers are never translated, in any language.
