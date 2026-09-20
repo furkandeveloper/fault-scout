@@ -114,10 +114,23 @@ fault-scout/
 ├── skills/
 │   └── faultscout/
 │       └── SKILL.md         the analysis skill
+├── .github/
+│   ├── ISSUE_TEMPLATE/      bug, feature, and report-quality templates
+│   ├── PULL_REQUEST_TEMPLATE.md
+│   └── workflows/
+│       └── validate.yml     manifest / layout consistency check (no build)
 ├── CLAUDE.md                this development specification
+├── CONTRIBUTING.md          open-source contribution guide
+├── CODE_OF_CONDUCT.md
+├── SECURITY.md
 ├── README.md
 └── LICENSE
 ```
+
+The `.github/` directory and the community files are open-source hygiene
+only; they are not plugin configuration and must not introduce a build,
+runtime, or dependency. The CI workflow may check JSON validity, manifest
+consistency, and repository layout, nothing more.
 
 Do not add directories such as `src/`, `analyzer/`, `services/`, `core/`,
 `utils/`, or any code tree. Do not add a second command or skill unless

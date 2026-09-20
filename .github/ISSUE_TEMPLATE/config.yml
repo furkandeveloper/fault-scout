@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/gofabric/fault-scout/security/advisories/new
+    about: Report privately. Do not open a public issue for security concerns.
+  - name: Questions and ideas
+    url: https://github.com/gofabric/fault-scout/discussions
+    about: Ask a question or discuss an idea before opening an issue.

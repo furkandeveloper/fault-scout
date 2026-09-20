@@ -1,0 +1,60 @@
+name: Validate plugin
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check manifests and plugin layout
+        run: |
+          python3 - <<'PY'
+          import json, os, sys
+
+          errors = []
+
+          def load(path):
+              try:
+                  with open(path) as f:
+                      return json.load(f)
+              except Exception as e:
+                  errors.append(f"{path}: invalid JSON ({e})")
+                  return None
+
+          plugin = load(".claude-plugin/plugin.json")
+          market = load(".claude-plugin/marketplace.json")
+
+          if plugin and market:
+              entry = next((p for p in market.get("plugins", []) if p.get("name") == plugin.get("name")), None)
+              if entry is None:
+                  errors.append("marketplace.json has no entry matching plugin.json name")
+              else:
+                  for key in ("version", "description", "license", "repository"):
+                      if plugin.get(key) != entry.get(key):
+                          errors.append(f"{key} differs between plugin.json and marketplace.json")
+              if plugin.get("name") != "faultscout":
+                  errors.append("plugin name must be 'faultscout'")
+
+          for path in ("commands/analyze.md", "skills/faultscout/SKILL.md", "README.md", "LICENSE"):
+              if not os.path.isfile(path):
+                  errors.append(f"missing required file: {path}")
+
+          for forbidden in ("src", "analyzer", "services", "core", "utils", ".mcp.json", "hooks", "agents"):
+              if os.path.exists(forbidden):
+                  errors.append(f"unexpected path in an analysis-only plugin: {forbidden}")
+
+          if errors:
+              print("\n".join(f"::error::{e}" for e in errors))
+              sys.exit(1)
+          print("Manifests and layout OK")
+          PY
+
+      - name: Check README version badge matches manifest
+        run: |
+          version=$(python3 -c "import json;print(json.load(open('.claude-plugin/plugin.json'))['version'])")
+          grep -q "version-${version}-" README.md || { echo "::error::README version badge does not match plugin.json ($version)"; exit 1; }
