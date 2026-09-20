@@ -114,6 +114,10 @@ fault-scout/
 ├── skills/
 │   └── faultscout/
 │       └── SKILL.md         the analysis skill
+├── assets/
+│   ├── logo.svg             project logo (static SVG, no scripts)
+│   ├── banner.svg           README banner
+│   └── social-preview.png   GitHub social preview (1280×640)
 ├── .github/
 │   ├── ISSUE_TEMPLATE/      bug, feature, and report-quality templates
 │   ├── PULL_REQUEST_TEMPLATE.md
@@ -127,7 +131,7 @@ fault-scout/
 └── LICENSE
 ```
 
-The `.github/` directory and the community files are open-source hygiene
+The `assets/` and `.github/` directories and the community files are open-source hygiene
 only; they are not plugin configuration and must not introduce a build,
 runtime, or dependency. The CI workflow may check JSON validity, manifest
 consistency, and repository layout, nothing more.

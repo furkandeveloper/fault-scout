@@ -1,6 +1,8 @@
 <div align="center">
 
-# 🔍 FaultScout
+<img src="assets/banner.svg" alt="FaultScout — Discover how your software system can fail" width="100%">
+
+<br>
 
 **Discover how your software system can fail — before production does.**
 
@@ -420,6 +422,7 @@ effect on the next session.
 
 ```text
 fault-scout/
+├── assets/                  logo and README banner (static SVG)
 ├── .claude-plugin/
 │   ├── plugin.json          plugin manifest
 │   └── marketplace.json     marketplace manifest (lets the repo install from GitHub)

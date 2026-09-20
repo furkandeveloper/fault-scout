@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="FaultScout logo">
+  <defs>
+    <linearGradient id="lens" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1e293b"/>
+      <stop offset="1" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#818cf8"/>
+      <stop offset="1" stop-color="#22d3ee"/>
+    </linearGradient>
+    <linearGradient id="crack" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fbbf24"/>
+      <stop offset="1" stop-color="#f97316"/>
+    </linearGradient>
+    <clipPath id="lensClip"><circle cx="108" cy="108" r="70"/></clipPath>
+  </defs>
+
+  <!-- handle -->
+  <line x1="160" y1="160" x2="222" y2="222" stroke="url(#ring)" stroke-width="26" stroke-linecap="round"/>
+
+  <!-- lens -->
+  <circle cx="108" cy="108" r="70" fill="url(#lens)"/>
+
+  <!-- architecture nodes inside the lens -->
+  <g clip-path="url(#lensClip)" stroke="#475569" stroke-width="3" fill="none">
+    <line x1="60" y1="80" x2="96" y2="98"/>
+    <line x1="96" y1="98" x2="140" y2="76"/>
+    <line x1="96" y1="98" x2="86" y2="142"/>
+    <line x1="140" y1="76" x2="152" y2="124"/>
+    <line x1="86" y1="142" x2="130" y2="150"/>
+  </g>
+  <g clip-path="url(#lensClip)" fill="#94a3b8">
+    <circle cx="60" cy="80" r="6"/>
+    <circle cx="140" cy="76" r="6"/>
+    <circle cx="86" cy="142" r="6"/>
+    <circle cx="152" cy="124" r="6"/>
+    <circle cx="130" cy="150" r="6"/>
+  </g>
+
+  <!-- the fault: a crack running through the graph -->
+  <polyline points="98,44 112,84 92,102 122,126 104,148 118,172"
+            fill="none" stroke="#0f172a" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" clip-path="url(#lensClip)"/>
+  <polyline points="98,44 112,84 92,102 122,126 104,148 118,172"
+            fill="none" stroke="url(#crack)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" clip-path="url(#lensClip)"/>
+  <circle cx="96" cy="98" r="8" fill="#fbbf24"/>
+
+  <!-- ring -->
+  <circle cx="108" cy="108" r="70" fill="none" stroke="url(#ring)" stroke-width="14"/>
+</svg>
