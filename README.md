@@ -31,14 +31,14 @@ repository is its own plugin marketplace, so it installs straight from GitHub.
 Inside Claude Code:
 
 ```text
-/plugin marketplace add furkandeveloper/fault-scout
+/plugin marketplace add gofabric/fault-scout
 /plugin install faultscout@faultscout
 ```
 
 Or from your shell:
 
 ```bash
-claude plugin marketplace add furkandeveloper/fault-scout
+claude plugin marketplace add gofabric/fault-scout
 claude plugin install faultscout@faultscout
 ```
 
@@ -244,7 +244,7 @@ could not see.
 Clone the repository and validate the plugin:
 
 ```bash
-git clone https://github.com/furkandeveloper/fault-scout.git
+git clone https://github.com/gofabric/fault-scout.git
 cd fault-scout
 claude plugin validate .
 ```
@@ -290,9 +290,9 @@ usability of the analysis, not its reach into running systems.
 
 ## Author
 
-[furkandeveloper](https://github.com/furkandeveloper)
+[gofabric](https://github.com/gofabric)
 
-Issues and pull requests: <https://github.com/furkandeveloper/fault-scout>
+Issues and pull requests: <https://github.com/gofabric/fault-scout>
 
 ## License
 

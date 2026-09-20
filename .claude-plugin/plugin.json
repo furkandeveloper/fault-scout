@@ -4,11 +4,11 @@
   "description": "Discover how your software system can fail. Evidence-based, read-only static reliability analysis of a repository: architecture and critical flows, failure scenarios with file-level evidence, propagation paths, existing and missing safeguards.",
   "version": "0.3.0",
   "author": {
-    "name": "furkandeveloper",
-    "url": "https://github.com/furkandeveloper"
+    "name": "gofabric",
+    "url": "https://github.com/gofabric"
   },
-  "homepage": "https://github.com/furkandeveloper/fault-scout#readme",
-  "repository": "https://github.com/furkandeveloper/fault-scout",
+  "homepage": "https://github.com/gofabric/fault-scout#readme",
+  "repository": "https://github.com/gofabric/fault-scout",
   "license": "MIT",
   "keywords": [
     "reliability",

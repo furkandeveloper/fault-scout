@@ -1,8 +1,8 @@
 {
   "name": "faultscout",
   "owner": {
-    "name": "furkandeveloper",
-    "url": "https://github.com/furkandeveloper"
+    "name": "gofabric",
+    "url": "https://github.com/gofabric"
   },
   "description": "FaultScout plugin marketplace. Discover how your software system can fail.",
   "plugins": [
@@ -12,7 +12,7 @@
       "description": "Discover how your software system can fail. Evidence-based, read-only static reliability analysis of a repository: architecture and critical flows, failure scenarios with file-level evidence, propagation paths, existing and missing safeguards.",
       "version": "0.3.0",
       "license": "MIT",
-      "repository": "https://github.com/furkandeveloper/fault-scout",
+      "repository": "https://github.com/gofabric/fault-scout",
       "keywords": [
         "reliability",
         "resilience",
