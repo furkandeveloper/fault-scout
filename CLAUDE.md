@@ -116,6 +116,7 @@ fault-scout/
 │       └── SKILL.md         the analysis skill
 ├── assets/
 │   ├── logo.svg             project logo (static SVG, no scripts)
+│   ├── logo.png             512×512 avatar (organization / profile picture)
 │   ├── banner.svg           README banner
 │   └── social-preview.png   GitHub social preview (1280×640)
 ├── .github/
