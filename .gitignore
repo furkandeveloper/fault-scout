@@ -1,7 +1,6 @@
 # Claude Code local state (never commit local settings or session data)
 .claude/
 .claude/settings.local.json
-.mcp.json
 *.local.json
 
 # Secrets and environment

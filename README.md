@@ -3,25 +3,25 @@
 > Discover how your software system can fail.
 
 [![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-blue)](#installation)
-[![Version](https://img.shields.io/badge/version-0.2.0-informational)](#limitations)
+[![Version](https://img.shields.io/badge/version-0.3.0-informational)](#roadmap)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 ## What is FaultScout?
 
-FaultScout is a **Claude Code plugin** for reliability and chaos engineering.
-It is a **read-only reliability analysis tool** and a **chaos engineering
-analysis assistant**: you open Claude Code inside a repository, run one
-command, and FaultScout reads the code, builds a model of the architecture,
-finds the boundaries where things can break, and reports the five strongest
-**repository-specific, evidence-backed failure scenarios**, each with a
-failure propagation chain and a suggested experiment.
+FaultScout is a **Claude Code plugin** for evidence-based, **read-only
+reliability analysis**. You open Claude Code inside a repository, run one
+command, and FaultScout reads the code, reconstructs the architecture and
+critical flows, finds the boundaries where things can break, and reports
+**repository-specific failure scenarios** — each tied to real files,
+functions, and configuration, with a clear statement of how strong the
+evidence is.
 
-It is not generic chaos-engineering advice. Every scenario points at real
-files, functions, and flows in your repository. If the evidence is not there,
-FaultScout says so instead of guessing.
+It is not generic reliability advice. If the evidence is not in the
+repository, FaultScout says so instead of guessing.
 
-FaultScout does **not** inject failures at runtime. It produces hypotheses
-about how the system could fail, not confirmed results.
+FaultScout does **not** run your system, inject failures, or touch
+infrastructure. Every scenario is a static hypothesis, never a runtime
+result.
 
 ## Installation
 
@@ -67,62 +67,53 @@ The command name is the same in both cases.
 Open Claude Code in the repository you want to analyze and run:
 
 ```text
-/faultscout:chaos
+/faultscout:analyze
 ```
 
 The report is written in English by default. To get it in another supported
 language, pass `language=`:
 
 ```text
-/faultscout:chaos language=turkish
+/faultscout:analyze language=turkish
 ```
 
 Claude then:
 
-1. Inspects the repository: languages, entry points, dependencies, config,
-   Docker/infra files, databases, caches, brokers, workers, scheduled jobs,
-   external APIs, tests, retries, timeouts, transactions.
-2. Builds a lightweight architecture model.
-3. Traces the business-critical flows and identifies failure boundaries.
-4. Generates candidate failure hypotheses, merges the ones that share a root
-   cause, and selects the five strongest across different failure classes.
-5. Self-checks the draft for duplicated sections, broken text, and format
-   drift.
-6. Prints a **FaultScout Report** in the chat.
+1. Discovers the repository: languages, services and modules, entry points,
+   dependencies, configuration, databases, caches, brokers, external APIs,
+   workers, scheduled jobs, infrastructure, and CI/CD files.
+2. Reconstructs the architecture and the critical flows from the code.
+3. Locates failure boundaries and catalogues the resilience mechanisms that
+   already exist.
+4. Generates candidate failure scenarios, merges the ones that share a root
+   cause, and ranks the strongest by evidence quality.
+5. Self-checks the draft for invented evidence, unhedged claims, duplicated
+   scenarios, and format drift.
+6. Prints a **FaultScout Analysis Report** in the chat.
 
-The analysis is **read-only**. FaultScout does not modify your repository,
-change configuration, or start, stop, or disrupt any process or service.
+The analysis is **read-only**. FaultScout never modifies the analyzed
+repository, never runs the project or its tests, and never starts, stops, or
+disrupts any process, container, or service.
 
 ### Report language
 
 ```text
-/faultscout:chaos                     English (default)
-/faultscout:chaos language=english    English
-/faultscout:chaos language=turkish    Turkish
+/faultscout:analyze                     English (default)
+/faultscout:analyze language=english    English
+/faultscout:analyze language=turkish    Turkish
 ```
 
-| | |
-|---|---|
-| Default language | English |
-| Supported | English, Turkish |
-
-The language changes only the human-readable part of the report: title,
-headings, scenario descriptions, evidence explanations, propagation chains,
-consequences, suggested experiments, the summary, and Mermaid node labels.
-For example, in Turkish `## Failure Scenarios` becomes `## Hata Senaryoları`
-and `**Failure Propagation:**` becomes `**Hata Yayılımı:**`.
-
-Anything taken from your repository is never translated: file paths,
-function/type/variable names, config keys, queue/topic/table/cache key names,
-log messages, and code snippets stay exactly as they appear in the code.
-Translation does not change the technical meaning of the evidence, the
-fact/hypothesis distinction ("may grow" stays "büyüyebilir", not "büyür"),
-the confidence levels, or the Mermaid structure.
+The language changes only the human-readable part of the report: headings,
+labels, scenario prose, propagation chains, and Mermaid node labels.
+Anything taken from your repository — file paths, function and class names,
+configuration keys, queue/table/key names, log messages, code snippets — is
+never translated. Translation never changes the evidence, the certainty
+level, the hedging, or the confidence value.
 
 An unsupported value stops before any analysis:
 
 ```text
-/faultscout:chaos language=spanish
+/faultscout:analyze language=spanish
 
 Unsupported language: spanish.
 Supported languages: english, turkish.
@@ -130,63 +121,77 @@ Supported languages: english, turkish.
 
 ## What it analyzes
 
-- architecture and component boundaries
-- data flows and business-critical request paths
-- queues, message brokers, producers, and consumers
-- caches
-- databases and transactions
-- retries, timeouts, and circuit breakers
-- idempotency of side effects
-- failure handling and partial failures
-- consistency (stale state, eventual consistency, races)
-- external dependencies and outbound calls
+Failure classes FaultScout looks for, only where the repository supports
+them:
+
+- dependency outages (database, cache, broker, external API, internal service)
+- timeouts — missing, unbounded, or mismatched across a call chain
+- retries and retry storms
+- missing resilience safeguards (circuit breakers, bulkheads, fallbacks, rate limits)
+- partial writes and non-transactional multi-step updates
+- stale cache
+- race conditions
+- duplicate processing and idempotency gaps
+- event delivery failures (publish-after-commit gaps, ack ordering, dead letters)
+- startup failures
+- resource exhaustion (pools, queues, threads, memory)
+- recovery problems (reconnects, poison messages, graceful shutdown)
 
 ## Output
 
-The report always has the same structure:
+Every report has the same nine sections:
 
 ```text
-System Overview
-        ↓
-Architecture Diagram
-        ↓
-Failure Scenarios
-        ↓
-Evidence
-        ↓
-Failure Propagation
-        ↓
-Impact
-        ↓
-Suggested Experiment
+# FaultScout Analysis Report
+## 1. Executive Summary
+## 2. Repository Overview
+## 3. Architecture and Critical Flows
+## 4. Failure Scenarios
+## 5. Failure Propagation Paths
+## 6. Existing Resilience Mechanisms
+## 7. Potential Reliability Gaps
+## 8. Recommended Follow-Up Actions
+## 9. Evidence and Limitations
 ```
 
-In Markdown terms: a `# FaultScout Report` with `## Repository`,
-`## Architecture` (summary plus a Mermaid diagram of the normal flow),
-`## Failure Scenarios` with five numbered scenarios, and a `## Summary`.
-Each scenario has exactly these sections, in this order:
+Each failure scenario contains: title, summary, trigger condition, affected
+component, evidence (file paths, function/method/class/config references,
+line ranges when they were actually read), failure mechanism, failure
+propagation path, potential consequences, existing mitigations, missing or
+questionable mitigations, static confidence, suggested follow-up, and
+evidence limitations.
 
-- **Failure Type** — the failure class (e.g. Messaging / Idempotency)
-- **Evidence** — files and symbols observed in the code, and what they do or
-  do not contain
-- **Failure Condition** — the abnormal condition that triggers the scenario
-- **Failure Propagation** — a step chain from failure to consequence, plus a
-  Mermaid diagram when it helps (a branch, a join, a retry loop, or a long
-  chain)
-- **Potential Consequence** — what the user or business may observe
-- **How It Could Be Tested Later** — a concrete future chaos experiment
-- **Confidence** — High / Medium / Low, describing how well the evidence
-  supports the analysis (not severity)
+### Three levels of certainty
 
-Evidence sections contain facts. Everything after them is a hypothesis
-derived from those facts. Diagrams render in any Markdown viewer with Mermaid
-support (GitHub, most editors); no extra tooling is needed.
+Every claim is labelled so you know how much to trust it:
 
-## Example
+| Level | Phrase |
+|---|---|
+| Directly observed | "The code directly shows..." |
+| Strongly supported inference | "This suggests..." |
+| Plausible but unverified | "A possible failure mode is..." / "The repository does not provide enough evidence to confirm..." |
 
-A failure propagation diagram from a scenario might look like this:
+### Confidence
 
-Potential failure propagation:
+Confidence describes the **quality of the static evidence** — not the
+probability that a failure occurs, and not its severity.
+
+| Level | Meaning |
+|---|---|
+| HIGH | Directly supported by clear code or configuration evidence |
+| MEDIUM | Strongly plausible and supported by multiple pieces of evidence, but runtime behavior is unknown |
+| LOW | Possible, but repository evidence is insufficient |
+
+### Diagrams
+
+The report uses Mermaid diagrams only when they clarify an evidence-supported
+relationship — a service dependency graph, a request lifecycle, a data
+consistency flow, an event processing flow, or a failure propagation flow
+with a branch, join, or loop. Every node and edge in a diagram is backed by a
+file Claude read; nothing is added from general knowledge about "systems
+like this". Diagrams render in any Markdown viewer with Mermaid support.
+
+Illustrative propagation diagram (not real output):
 
 ```mermaid
 flowchart TD
@@ -195,98 +200,44 @@ flowchart TD
     C[Message is retried]
     D[Child increment executes again]
     E[Usage may be double counted]
-    F[Budget may be exhausted early]
 
     A --> B
     B --> C
     C --> D
     D --> E
-    E --> F
 
     classDef failure stroke-width:2px
     classDef consequence stroke-width:2px,stroke-dasharray: 4 2
     class B failure
-    class F consequence
+    class E consequence
 ```
 
-This is only an illustration. Real FaultScout output is generated from the
-evidence in your repository: the components, connections, and propagation
-steps come from files Claude actually read, and nothing is added from general
-knowledge about "systems like this".
+## Analysis boundaries
 
-## Experiment execution (v0.2)
+FaultScout is deliberately limited to static analysis:
 
-v0.2 turns a failure scenario into a real, but tightly scoped, runtime
-experiment against your **local Docker Compose environment** — no MCP
-server, no backend, no daemon. Claude Code's own terminal access is the
-entire runtime interface.
+- read-only analysis of the target repository; no source-code modifications
+- no runtime execution, no failure injection, no container or network
+  manipulation, no production or external-system access
+- no runtime validation: nothing in a report is tested, reproduced, or
+  confirmed
+- no invented evidence, and no assumption that an unobserved failure is
+  impossible or that a missing safeguard automatically proves a bug
 
-The flow:
-
-```text
-Analyze (/faultscout:chaos)
-        ↓
-Choose a scenario
-        ↓
-Plan the experiment (target, failure mode, expected signal, restore steps)
-        ↓
-You explicitly approve execution
-        ↓
-Docker Compose experiment (snapshot → inject → observe → restore → verify)
-        ↓
-Experiment Report
-```
-
-Run `/faultscout:experiment` (optionally `/faultscout:experiment 3` to pick
-scenario 3 directly) — see the `chaos-experiment` skill and
-`commands/experiment.md`. Supported failure modes are exactly:
-
-- **`container.pause`** — pause and later unpause a Compose service's
-  container.
-- **`container.network_disconnect`** — disconnect and later reconnect a
-  container from a specific Compose-managed network.
-- **`redis.poison_key`** — overwrite a specific Redis key and later restore
-  its exact original value (or delete it, if it did not previously exist).
-
-Guarantees:
-
-- **FaultScout never modifies your codebase.** No source file, Dockerfile,
-  Compose file, or configuration file is ever edited to run an experiment.
-  If a scenario would require a code change to test, FaultScout says so and
-  stops instead.
-- **Nothing is mutated without your explicit approval of the printed plan.**
-  Selecting a scenario is not approval to execute it.
-- **Local Docker Compose only.** Experiments never target Kubernetes,
-  staging, production, cloud infrastructure, or a remote Docker daemon.
-- **Every experiment that injects a failure restores it**, and verifies the
-  restoration instead of assuming the restore command succeeded. If restore
-  fails, FaultScout says so plainly and gives the exact manual fix.
-- **No generic command execution.** Only the commands each supported failure
-  mode actually needs (`docker compose pause/unpause`, `docker network
-  disconnect/connect`, a single planned `redis-cli` operation, plus
-  read-only inspection and observation commands) — never `docker compose
-  down`, `docker system prune`, `docker rm`, `docker kill`, `docker stop`,
-  `docker volume rm`, or `docker network rm`.
+The analysis stays useful when the repository cannot be run locally, has no
+Compose file, has unavailable dependencies or incomplete configuration, or
+is only one part of a larger system — the report states what it could and
+could not see.
 
 ## Limitations
 
-- **Chaos analysis (`/faultscout:chaos`) is read-only.** It reads and
-  reasons; it changes nothing in your repository or your running system.
-- **Experiment execution (`/faultscout:experiment`) can mutate your local
-  Docker Compose environment**, but only after you explicitly approve a
-  printed plan, only using one of the three supported failure modes, and
-  always followed by a verified restore. It never modifies your repository.
-- Neither command touches production systems or infrastructure.
-- The analysis is only as good as the repository evidence. Behavior that lives
-  outside the repository (infrastructure config, managed services, runtime
-  settings) is not visible to it.
-- Every failure scenario is a **hypothesis**, not a confirmed failure, until
-  an experiment result says `CONFIRMED` or `PARTIALLY_CONFIRMED` with
-  concrete evidence.
-- Restoring the injected infrastructure state does not necessarily undo
-  application-level business side effects that occurred while the failure
-  was active; the experiment report calls this out explicitly when it
-  applies.
+- The analysis is only as good as the repository evidence. Behavior that
+  lives outside the repository (managed services, infrastructure config,
+  runtime settings) is not visible to it.
+- Every scenario is a **hypothesis** derived from static evidence. Confirming
+  it requires tests or experiments that are outside FaultScout's scope.
+- Line ranges are cited only when Claude actually read those lines; other
+  references use the file and symbol only.
 
 ## Development
 
@@ -306,21 +257,17 @@ cd /path/to/some/project
 claude --plugin-dir /path/to/fault-scout
 ```
 
-Then run `/faultscout:chaos` or `/faultscout:experiment` as usual. Changes to
-command or skill files take effect on the next session.
+Then run `/faultscout:analyze` as usual. Changes to command or skill files
+take effect on the next session.
 
-The commands and skills have no build step and no dependencies. There is no
-server, backend, or daemon of any kind — the experiment engine is the
-`chaos-experiment` skill itself, driving Claude Code's terminal directly.
-The plugin consists of:
+The plugin has no build step, no dependencies, no server, and no runtime
+code. It consists of:
 
 ```text
 .claude-plugin/plugin.json        plugin manifest
 .claude-plugin/marketplace.json   marketplace manifest (lets the repo install from GitHub)
-commands/chaos.md                 the /faultscout:chaos command (parses language=)
-commands/experiment.md            the /faultscout:experiment command (approval-gated execution)
-skills/chaos-analysis/SKILL.md    how Claude reasons about failures and writes the report
-skills/chaos-experiment/SKILL.md  how Claude plans and safely executes a chosen experiment
+commands/analyze.md               the /faultscout:analyze command (parses language=)
+skills/faultscout/SKILL.md        how Claude discovers, reasons about, and reports failure scenarios
 CLAUDE.md                         development specification (not loaded by the plugin)
 ```
 
@@ -330,17 +277,16 @@ comes from `commands/` and `skills/`.
 
 ## Roadmap
 
-- **0.1** — Repository analysis and report
-- **0.1.1** — Deterministic report structure, failure propagation chains,
-  root-cause deduplication, output self-check
-- **0.1.2** — Mermaid architecture and failure propagation diagrams
-- **0.1.3** — Report language selection (`language=english|turkish`)
-- **0.2** — `/faultscout:experiment`: turn a scenario into an approved,
-  evidence-backed experiment plan and execute it directly through Claude
-  Code's terminal against local Docker Compose (`container.pause`,
-  `container.network_disconnect`, `redis.poison_key`), with mandatory
-  snapshot/restore/verify and an evidence-backed result (this release)
-- **1.0** — CI integration: scenarios and regressions reported on pull requests
+FaultScout stays analysis-only. Planned work improves the depth and
+usability of the analysis, not its reach into running systems.
+
+- **0.3** — Analysis-only plugin: `/faultscout:analyze`, the `faultscout`
+  skill, nine-section report, three certainty levels, static confidence
+  (this release)
+- **Next** — scoped analysis (`/faultscout:analyze` on a path, service, or
+  flow); optional report-to-file on request; more report languages
+- **Later** — pull-request analysis in CI: a read-only report on how a change
+  affects the failure scenarios of the system
 
 ## Author
 

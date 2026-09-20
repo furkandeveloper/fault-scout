@@ -3,815 +3,288 @@
 > **Note: this file is a development specification, not plugin runtime
 > context.** Claude Code does not load a plugin's root `CLAUDE.md` when the
 > plugin is installed. Everything FaultScout sends to Claude at runtime comes
-> from `commands/chaos.md` and `skills/chaos-analysis/SKILL.md`. This file only
+> from `commands/analyze.md` and `skills/faultscout/SKILL.md`. This file only
 > guides Claude while *developing* FaultScout in this repository. (Plugin
-> validation reports it as a warning for the same reason; that is expected.)
+> validation may report it as a warning for the same reason; that is
+> expected.)
 
 ## Project Overview
 
-Build **FaultScout**, an open-source Claude Code plugin that helps developers discover how their software systems could fail.
+**FaultScout** is an open-source Claude Code plugin that helps developers
+discover how their software systems could fail.
 
 > **FaultScout: Discover how your software system can fail.**
 
-FaultScout is intended to be installed into a developer's existing Claude Code environment and used inside their own repositories.
+It is installed into a developer's existing Claude Code environment and used
+inside their own repositories. Its only capability is **evidence-based static
+reliability analysis** of a repository.
 
-The first version must be extremely small.
+FaultScout is not a generic AI chatbot and not a chaos-experiment runner. It
+is a specialized reliability-analysis skill whose core question is:
 
----
-
-# Core Idea
-
-The user should be able to open Claude Code inside any software repository and run:
-
-```text
-/chaos
-```
-
-FaultScout should then:
-
-1. Inspect the repository.
-2. Understand the system architecture.
-3. Identify important dependencies and flows.
-4. Identify potential failure boundaries.
-5. Generate concrete failure hypotheses.
-6. Produce a report containing the **5 strongest potential failure scenarios**.
-
-The scenarios must be based on evidence from the actual repository.
-
-The system must NOT produce generic chaos-engineering advice.
+> Given this repository's actual architecture and implementation, how could
+> this system fail under abnormal conditions?
 
 ---
 
-# Important Product Principle
+# Scope
 
-FaultScout is not a generic AI chatbot.
+FaultScout is **analysis-only**. It reads a repository and prints a report.
 
-It is a **specialized reliability/chaos-engineering skill for Claude Code**.
+It must NOT:
 
-Its core question is:
+- modify the analyzed repository's source code, configuration, or files
+- run the analyzed project, its tests, or its build
+- execute runtime experiments or failure injection of any kind
+- manipulate containers, networks, processes, caches, databases, or brokers
+- use Docker, Docker Compose, Kubernetes, or cloud CLIs
+- access production or any external system
+- present a scenario as tested, reproduced, observed, or confirmed
+- invent evidence, components, behavior, line numbers, or runtime results
 
-> "Given this repository's actual architecture and implementation, how could this system fail under abnormal conditions?"
+Do NOT implement, now or as a "future phase" inside this repository:
 
----
+- MCP servers or MCP configuration
+- backend services, daemons, databases, web UIs, dashboards
+- snapshot / restore logic, experiment approval flows, experiment result
+  enums
+- automatic code changes or automatic fixes
+- external dependencies, build steps, or runtime code of any language
 
-# Phase 0.1 Scope
-
-Phase 0.1 is **analysis-only**.
-
-The plugin must NOT actually disrupt or modify the user's system.
-
-Do NOT implement:
-
-* Python
-* Backend server
-* Database
-* MCP server
-* Docker integration
-* Kubernetes integration
-* Network fault injection
-* Process killing
-* Service shutdown
-* Redis manipulation
-* PostgreSQL manipulation
-* Kafka manipulation
-* Elasticsearch manipulation
-* Production infrastructure integration
-* Automatic code changes
-* Automatic fixes
-* Web UI
-* Dashboard
-* Vector database
-* RAG infrastructure
-* Model training
-
-These are future possibilities.
-
-The only goal of Phase 0.1 is:
+The whole product is Claude Code instructions:
 
 ```text
 Repository
     ↓
-Analysis
+Read-only discovery
     ↓
-Failure hypotheses
+Architecture + critical flows
     ↓
-5 concrete scenarios
+Failure boundaries + existing safeguards
     ↓
-Markdown report
+Evidence-backed failure scenarios
+    ↓
+FaultScout Analysis Report (Markdown, printed in chat)
 ```
 
 ---
 
 # Architecture
 
-FaultScout must be implemented as a **Claude Code Plugin**.
-
-Do not build a separate application.
-
-The initial architecture should be:
+FaultScout is a **Claude Code plugin**. Do not build a separate application.
 
 ```text
 Claude Code
     │
-    ├── FaultScout Plugin
+    ├── FaultScout plugin
     │
-    ├── /chaos command
+    ├── /faultscout:analyze command   (commands/analyze.md)
     │
-    └── chaos-analysis skill
+    └── faultscout skill              (skills/faultscout/SKILL.md)
             │
             ▼
-      Repository Analysis
+      Repository discovery
             │
             ▼
-      Failure Hypotheses
+      Architecture and critical flows
             │
             ▼
-       Chaos Report
+      Failure scenarios with evidence
+            │
+            ▼
+      FaultScout Analysis Report
 ```
 
-Claude Code already provides the ability to inspect files, search the repository, use Git, and execute commands.
-
+Claude Code already provides file inspection, search, Git, and shell access.
 Do not recreate these capabilities.
 
 ---
 
-# Initial Repository Structure
+# Repository Structure
 
-Keep the project intentionally small.
-
-Use this structure:
+Keep the project intentionally small:
 
 ```text
-faultscout/
-│
+fault-scout/
 ├── .claude-plugin/
-│   └── plugin.json
-│
-├── skills/
-│   └── chaos-analysis/
-│       └── SKILL.md
-│
+│   ├── plugin.json          plugin manifest
+│   └── marketplace.json     marketplace manifest (installs from GitHub)
 ├── commands/
-│   └── chaos.md
-│
+│   └── analyze.md           /faultscout:analyze
+├── skills/
+│   └── faultscout/
+│       └── SKILL.md         the analysis skill
+├── CLAUDE.md                this development specification
 ├── README.md
 └── LICENSE
 ```
 
-Do not create additional directories unless there is a concrete requirement.
+Do not add directories such as `src/`, `analyzer/`, `services/`, `core/`,
+`utils/`, or any code tree. Do not add a second command or skill unless
+there is a concrete, analysis-only requirement, and explain the deviation.
 
-Do not create:
-
-```text
-src/
-analyzer/
-services/
-models/
-repositories/
-clients/
-utils/
-core/
-domain/
-application/
-infrastructure/
-```
-
-There is no need for them in Phase 0.1.
+The primary skill is named **`faultscout`**. The command is
+**`/faultscout:analyze`**. Do not reintroduce the names `chaos-analysis`,
+`chaos-experiment`, `/faultscout:chaos`, or `/faultscout:experiment`.
 
 ---
 
 # Plugin Manifest
 
-Create:
+`.claude-plugin/plugin.json` uses the Claude Code plugin manifest format:
+`name` (`faultscout`), `description`, `version`, `author`, `license`,
+`keywords`, `commands: "./commands/"`, `skills: "./skills/"`. Keep
+`.claude-plugin/marketplace.json` in sync (same description and version).
 
-```text
-.claude-plugin/plugin.json
-```
-
-Use the Claude Code plugin manifest format.
-
-Initial metadata should be approximately:
-
-```json
-{
-  "name": "faultscout",
-  "description": "Discover how your software system can fail.",
-  "version": "0.1.0",
-  "author": {
-    "name": "FaultScout"
-  },
-  "license": "MIT",
-  "keywords": [
-    "chaos-engineering",
-    "reliability",
-    "claude-code",
-    "agent",
-    "software-engineering"
-  ],
-  "skills": "./skills/"
-}
-```
-
-Do not add unnecessary configuration.
+Do not add hooks, MCP servers, agents, or other configuration.
 
 ---
 
-# `/chaos` Command
+# `/faultscout:analyze` Command
 
-Create:
+`commands/analyze.md` invokes the `faultscout` skill and performs read-only
+repository analysis. It:
 
-```text
-commands/chaos.md
-```
+1. Resolves the report language from `$ARGUMENTS` (`language=english` by
+   default, `language=turkish` supported; any other value prints an
+   "Unsupported language" message and stops before analysis).
+2. Walks the analysis steps silently: discovery → architecture and critical
+   flows → trace the flows in code → failure boundaries → existing
+   safeguards → candidate scenarios → ranking and confidence → self-check.
+3. Prints the FaultScout Analysis Report once, as the final message.
 
-The command must invoke the chaos-analysis workflow.
-
-The user experience should be:
-
-```text
-/chaos
-```
-
-Claude then analyzes the current repository.
-
-The command should instruct Claude to:
-
-1. Inspect the repository.
-2. Understand the architecture.
-3. Identify dependencies.
-4. Trace important flows.
-5. Identify failure boundaries.
-6. Generate failure hypotheses.
-7. Select the five strongest scenarios.
-8. Produce a concise Chaos Report.
+The command must never modify the analyzed repository and must not execute
+runtime experiments.
 
 ---
 
-# Chaos Analysis Skill
+# `faultscout` Skill
 
-Create:
+`skills/faultscout/SKILL.md` defines Claude's role as a senior reliability
+engineer performing static analysis. Its rules, in priority order:
 
-```text
-skills/chaos-analysis/SKILL.md
-```
+## Evidence before hypothesis
 
-The skill should define Claude's role as a senior reliability/chaos engineer.
+Every claim rests on something actually found in the repository in the
+current session. Never invent files, functions, classes, services,
+dependencies, databases, brokers, configuration, behavior, or line numbers.
+Line ranges are cited only for lines actually read.
 
-The skill must emphasize:
+Two symmetric rules: a missing safeguard is a gap, not a proven bug; an
+unobserved failure is not an impossible one.
 
-> Evidence before hypothesis.
+## Three levels of certainty
 
-Claude must never invent:
+| Level | Phrase |
+|---|---|
+| Directly observed | "The code directly shows..." |
+| Strongly supported inference | "This suggests..." |
+| Plausible but unverified | "A possible failure mode is..." / "The repository does not provide enough evidence to confirm..." |
 
-* files
-* functions
-* services
-* dependencies
-* databases
-* message brokers
-* architecture
-* behavior
-* configuration
-* line numbers
+Never state that the system definitely fails; use may / could / potential /
+plausible / likely (only when evidence supports it).
 
-If evidence cannot be found, Claude must explicitly say so.
+## Discovery
 
----
+Languages, services, modules, entry points, dependency manifests,
+configuration, infrastructure and CI/CD files, databases and transactions,
+caches, brokers and producers/consumers, workers and scheduled jobs,
+external APIs, retries / timeouts / circuit breakers, health checks and
+shutdown, resource limits, tests. Only report what the repository contains.
 
-# Repository Discovery
+## Failure classes
 
-Claude should inspect the repository for:
+Dependency outages, timeouts, retries and retry storms, missing resilience
+safeguards, partial writes, stale cache, race conditions, duplicate
+processing, event delivery failures, idempotency gaps, startup failures,
+resource exhaustion, recovery problems. Never invent a scenario to fill a
+class.
 
-* programming languages
-* application entry points
-* configuration
-* dependency manifests
-* Docker configuration
-* infrastructure configuration
-* database access
-* cache usage
-* message brokers
-* event producers
-* event consumers
-* background workers
-* scheduled jobs
-* external APIs
-* tests
-* retry mechanisms
-* timeout handling
-* transactions
+## Scenario selection
 
-Do not assume that a technology exists.
+Generate candidates internally, deduplicate by root cause, rank by evidence
+strength, realism, impact, and clarity of propagation. Report the strongest
+(typically three to seven), covering different classes where supported;
+report fewer and say so rather than pad.
 
-Only report technologies supported by repository evidence.
+## Confidence
 
----
+`HIGH` (directly supported by clear code or configuration evidence),
+`MEDIUM` (strongly plausible, multiple pieces of evidence, runtime unknown),
+`LOW` (possible, evidence insufficient). Confidence describes the quality of
+the static evidence, never probability or severity.
 
-# Architecture Understanding
+## Scenario fields
 
-Claude should construct a lightweight mental model of the system.
+Title, Summary, Trigger condition, Affected component, Evidence (file
+paths; function / method / class / configuration references; line ranges
+when available), Failure mechanism, Failure propagation path, Potential
+consequences, Existing mitigations, Missing or questionable mitigations,
+Static confidence, Suggested follow-up, Evidence limitations. Each exactly
+once, in that order.
 
-For example:
-
-```text
-HTTP Request
-    ↓
-Order Service
-    ↓
-PostgreSQL
-    ↓
-Outbox
-    ↓
-Consumer
-    ↓
-Elasticsearch
-```
-
-This does not need to become a formal architecture diagram.
-
-The goal is to understand where failures can propagate.
-
----
-
-# Failure Boundaries
-
-Pay particular attention to boundaries where:
-
-* one service depends on another
-* a network request can fail
-* an event can be duplicated
-* an event can be delayed
-* an event can be reordered
-* an operation can partially complete
-* a process can crash between two side effects
-* retries can repeat side effects
-* stale data can be observed
-* asynchronous processing can create eventual consistency
-* external services can timeout
-* databases can become unavailable
-* caches can become unavailable
-* consumers can fail
-* multiple concurrent operations can race
-
----
-
-# Failure Hypothesis Generation
-
-A failure hypothesis should contain:
+## Report sections
 
 ```text
-Condition
-+
-Failure
-+
-Affected component
-+
-Potential consequence
+# FaultScout Analysis Report
+## 1. Executive Summary
+## 2. Repository Overview
+## 3. Architecture and Critical Flows
+## 4. Failure Scenarios
+## 5. Failure Propagation Paths
+## 6. Existing Resilience Mechanisms
+## 7. Potential Reliability Gaps
+## 8. Recommended Follow-Up Actions
+## 9. Evidence and Limitations
 ```
 
-Example:
-
-```text
-Condition:
-An OrderCreated event is delivered twice.
-
-Failure:
-The consumer processes both deliveries.
-
-Potential consequence:
-The order side effect may happen twice.
-```
-
-The hypothesis must be connected to actual repository evidence.
-
----
-
-# Scenario Selection
-
-Generate several possible hypotheses internally.
-
-Then select the **5 strongest scenarios**.
-
-Prefer scenarios that are:
-
-1. Strongly supported by repository evidence.
-2. Technically plausible.
-3. Relevant to important system behavior.
-4. Specific to this repository.
-5. Potentially reproducible in a future chaos experiment.
-
-Do not generate five variations of the same failure.
-
-Try to cover different failure classes when the repository supports them.
-
----
-
-# Evidence Requirement
-
-Every scenario must contain concrete repository evidence.
-
-Good:
-
-```text
-Evidence:
-
-internal/events/order_consumer.go
-
-The consumer processes OrderCreated events without
-an apparent idempotency check.
-```
-
-Bad:
-
-```text
-Payment systems often have duplicate-event problems.
-```
-
-Generic statements are not evidence.
-
-If there is insufficient evidence, say:
-
-```text
-Evidence insufficient.
-```
-
-Never fabricate evidence.
-
----
-
-# Fact vs Hypothesis
-
-The report must distinguish between facts and hypotheses.
-
-### Fact
-
-```text
-The consumer does not contain an apparent idempotency check.
-```
-
-### Hypothesis
-
-```text
-Duplicate delivery may cause duplicate processing.
-```
-
-### Confirmed Result
-
-```text
-The system processed the event twice.
-```
-
-Phase 0.1 performs no runtime chaos experiments.
-
-Therefore Phase 0.1 cannot produce confirmed results.
-
-Never state that the system definitely fails.
-
-Use language such as:
-
-* may
-* could
-* potential
-* plausible
-* likely, when evidence supports it
-
----
-
-# Scenario Format
-
-Each scenario should contain:
-
-```text
-Failure Type
-Evidence
-Failure Condition
-Potential Consequence
-How It Could Be Tested Later
-Confidence
-```
-
-Example:
-
-```markdown
-## 1. Duplicate Event Processing
-
-**Failure Type:** Messaging / Idempotency
-
-**Evidence:**
-
-`internal/events/order_consumer.go`
-
-The consumer processes OrderCreated events and no apparent
-idempotency check was found before the side effect.
-
-**Failure Condition:**
-
-The same event is delivered twice.
-
-**Potential Consequence:**
-
-The side effect may be executed twice.
-
-**How It Could Be Tested Later:**
-
-Deliver the same event twice and observe whether the side effect
-occurs once or multiple times.
-
-**Confidence:** High
-```
-
----
-
-# Confidence
-
-Use only:
-
-* High
-* Medium
-* Low
-
-Confidence measures confidence in the **analysis**, not severity.
-
-For example:
-
-```text
-High confidence:
-The repository clearly shows the relevant code path.
-
-Medium confidence:
-The architecture suggests the failure, but some behavior is unclear.
-
-Low confidence:
-The scenario is plausible but repository evidence is incomplete.
-```
-
-Do not confuse confidence with severity.
-
----
-
-# Report Format
-
-The final output should be:
-
-```markdown
-# FaultScout Report
-
-## Repository
-
-<repository name>
-
-## Architecture
-
-<short architecture summary>
-
-## Failure Scenarios
-
-### 1. <scenario>
-
-...
-
-### 2. <scenario>
-
-...
-
-### 3. <scenario>
-
-...
-
-### 4. <scenario>
-
-...
-
-### 5. <scenario>
-
-...
-
-## Summary
-
-<short summary of the most important reliability risks>
-```
-
-Keep the report concise.
-
-A developer should be able to understand it in a few minutes.
-
----
-
-# Example
-
-Given a repository with:
-
-```text
-API
- ↓
-PostgreSQL
- ↓
-Outbox
- ↓
-Kafka
- ↓
-Consumer
- ↓
-Elasticsearch
-```
-
-FaultScout might produce:
-
-```text
-# FaultScout Report
-
-## Architecture
-
-The system consists of an API backed by PostgreSQL.
-Changes are propagated through an outbox/Kafka flow to an
-Elasticsearch consumer.
-
-## Failure Scenarios
-
-### 1. Duplicate Event Processing
-
-Evidence:
-`internal/consumer/order.go`
-
-No apparent idempotency mechanism was found.
-
-Potential consequence:
-The same event may produce duplicate side effects.
-
-How to test later:
-Deliver the same event twice.
-
-Confidence:
-High
-
-### 2. Consumer Crash After Database Commit
-
-Evidence:
-`internal/consumer/order.go`
-
-Database state is modified before the event acknowledgement.
-
-Potential consequence:
-A process crash may cause the message to be processed again.
-
-How to test later:
-Terminate the consumer after the database operation and before ACK.
-
-Confidence:
-Medium
-```
-
-The exact scenarios must depend on the actual repository.
-
----
-
-# Important: Do Not Over-Engineer
-
-This is an MVP.
-
-Do not introduce:
-
-* complex abstractions
-* classes for every concept
-* unnecessary configuration
-* external dependencies
-* frameworks
-* databases
-* APIs
-* separate application layers
-
-FaultScout V0.1 should primarily consist of **Claude Code instructions and skills**.
-
-The intelligence should come from Claude's ability to inspect and reason about the repository.
-
----
-
-# MCP — Future Phase
-
-Do NOT implement MCP in Phase 0.1.
-
-MCP becomes useful when FaultScout needs to perform actions that go beyond repository analysis.
-
-Future MCP tools may include:
-
-```text
-get_service_status()
-stop_service()
-restart_service()
-inject_latency()
-disconnect_network()
-collect_logs()
-run_experiment()
-```
-
-The future architecture will become:
-
-```text
-Claude Code
-     │
-     ├── FaultScout Skills
-     │
-     └── FaultScout MCP
-             │
-             ├── Docker
-             ├── Network
-             ├── Services
-             └── Experiments
-```
-
-MCP should provide capabilities.
-
-Skills should define how Claude reasons and uses those capabilities.
-
-Do not add MCP merely for the sake of using MCP.
-
----
-
-# Future Roadmap
-
-## Phase 0.1
-
-Repository analysis.
-
-```text
-/chaos
-   ↓
-Analyze repository
-   ↓
-Find failure boundaries
-   ↓
-Generate 5 hypotheses
-   ↓
-Report
-```
-
-## Phase 0.2
-
-Generate executable test scenarios.
-
-## Phase 0.3
-
-Introduce FaultScout MCP.
-
-## Phase 0.4
-
-Controlled local Docker failure injection.
-
-## Phase 0.5
-
-Execute chaos experiments.
-
-```text
-Hypothesis
-    ↓
-Failure Injection
-    ↓
-Test
-    ↓
-Observation
-    ↓
-Result
-```
-
-## Phase 1
-
-CI integration.
-
-```text
-Pull Request
-     ↓
-FaultScout
-     ↓
-Generate scenarios
-     ↓
-Run experiments
-     ↓
-Detect regressions
-     ↓
-PR report
-```
+Fixed order and headings. Mermaid diagrams (service dependency graph,
+request lifecycle, data consistency flow, event processing flow, failure
+propagation flow) only where they clarify an evidence-supported
+relationship; every node and edge backed by a file that was read; never
+decorative.
+
+## Report language
+
+English by default, Turkish supported. Only human-readable text is
+translated; identifiers, paths, config keys, names taken from the
+repository, and Mermaid syntax are never translated. Translation never
+changes evidence, certainty, hedging, confidence, or diagram structure. The
+skill holds the Turkish heading table; adding a language means adding a
+table there and the value to the supported list in the skill and the
+command.
 
 ---
 
 # Development Instructions for Claude
 
-Before implementing anything:
+When changing FaultScout:
 
-1. Inspect the requested architecture.
-2. Confirm that Phase 0.1 does not require Python.
-3. Confirm that Phase 0.1 does not require MCP.
-4. Keep the repository structure minimal.
-5. Explain any deviation from the requested structure.
-6. Implement incrementally.
-7. Test the plugin structure.
-8. Verify `/chaos` works as intended.
+1. Keep it analysis-only. If a requested feature would run, mutate, or
+   observe a live system, explain that it is out of scope and leave it out.
+2. Keep the structure to the files listed above. Explain any deviation.
+3. Keep the command and the skill consistent with each other: same steps,
+   same section and field names, same supported languages, same boundaries.
+4. Keep the skill free of ambiguous, conflicting, or overly broad
+   instructions. Every rule should be checkable in the pre-output
+   self-check.
+5. Keep README, CLAUDE.md, and both manifests describing the same product
+   and the same version.
+6. After any change, run:
 
-Do not silently expand the scope.
+   ```bash
+   claude plugin validate .
+   grep -rniE "mcp|experiment|inject|snapshot|restore|chaos-analysis|chaos-experiment|faultscout:chaos" --include='*.md' --include='*.json' .
+   ```
 
-If you think a feature is necessary but it belongs to a later phase, explain it and leave it out.
+   Validation must pass, and the grep must return only intentional
+   mentions (for example this file's list of things not to build, or the
+   README's statement that FaultScout does not inject failures).
+7. Test with a local checkout: `claude --plugin-dir /path/to/fault-scout`
+   inside some other repository, then `/faultscout:analyze`.
 
-The goal is not to build a large codebase.
+The goal is not to build a large codebase. The goal is to prove that:
 
-The goal is to prove that:
-
-> **Claude Code can use FaultScout to look at a real repository and discover meaningful, evidence-backed ways that system could fail.**
+> **Claude Code can use FaultScout to look at a real repository and discover
+> meaningful, evidence-backed ways that system could fail — without running
+> or touching it.**

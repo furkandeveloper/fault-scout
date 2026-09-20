@@ -9,13 +9,15 @@
     {
       "name": "faultscout",
       "source": "./",
-      "description": "Discover how your software system can fail. Evidence-backed chaos/reliability analysis with Mermaid diagrams, plus approval-gated local Docker Compose failure experiments run through the terminal.",
-      "version": "0.2.0",
+      "description": "Discover how your software system can fail. Evidence-based, read-only static reliability analysis of a repository: architecture and critical flows, failure scenarios with file-level evidence, propagation paths, existing and missing safeguards.",
+      "version": "0.3.0",
       "license": "MIT",
       "repository": "https://github.com/furkandeveloper/fault-scout",
       "keywords": [
-        "chaos-engineering",
         "reliability",
+        "resilience",
+        "failure-analysis",
+        "chaos-engineering",
         "claude-code"
       ],
       "category": "development"
